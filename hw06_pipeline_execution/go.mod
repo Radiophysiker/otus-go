@@ -1,4 +1,4 @@
-module github.com/Radiophysiker/otus-go/hw06_pipeline_execution
+module github.com/radiophysiker/otus-go/hw06_pipeline_execution
 
 go 1.16
 

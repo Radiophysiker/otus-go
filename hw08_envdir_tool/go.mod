@@ -1,3 +1,3 @@
-module github.com/Radiophysiker/otus-go/hw08_envdir_tool
+module github.com/radiophysiker/otus-go/hw08_envdir_tool
 
 go 1.16

@@ -1,4 +1,4 @@
-module github.com/Radiophysiker/otus-go/hw11_telnet_client
+module github.com/radiophysiker/otus-go/hw11_telnet_client
 
 go 1.16
 

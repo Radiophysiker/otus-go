@@ -1,4 +1,4 @@
-module github.com/Radiophysiker/otus-go/hw03_frequency_analysis
+module github.com/radiophysiker/otus-go/hw03_frequency_analysis
 
 go 1.16
 

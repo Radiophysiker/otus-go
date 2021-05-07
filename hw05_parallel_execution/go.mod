@@ -1,4 +1,4 @@
-module github.com/Radiophysiker/otus-go/hw05_parallel_execution
+module github.com/radiophysiker/otus-go/hw05_parallel_execution
 
 go 1.16
 

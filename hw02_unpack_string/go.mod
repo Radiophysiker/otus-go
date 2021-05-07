@@ -1,4 +1,4 @@
-module github.com/Radiophysiker/otus-go/hw02_unpack_string
+module github.com/radiophysiker/otus-go/hw02_unpack_string
 
 go 1.16
 

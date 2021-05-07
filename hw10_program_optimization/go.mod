@@ -1,4 +1,4 @@
-module github.com/Radiophysiker/otus-go/hw10_program_optimization
+module github.com/radiophysiker/otus-go/hw10_program_optimization
 
 go 1.16
 
