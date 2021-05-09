@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"io"
+	"math"
 	"os"
 
 	"github.com/cheggaaa/pb/v3"
@@ -83,10 +84,9 @@ func copyingProcess(rs io.ReadSeeker, w io.Writer, sourceFileSize, offset, limit
 	}
 
 	var totalAmountOfBytes int64
-	switch {
-	case limit != 0:
-		totalAmountOfBytes = limit
-	default:
+	if limit != 0 {
+		totalAmountOfBytes = int64(math.Min(float64(limit), float64(sourceFileSize)))
+	} else {
 		totalAmountOfBytes = sourceFileSize - offset
 	}
 
@@ -96,17 +96,18 @@ func copyingProcess(rs io.ReadSeeker, w io.Writer, sourceFileSize, offset, limit
 	pBar := pb.Start64(totalAmountOfBytes)
 	pBar.SetWidth(100)
 	pBar.Set(pb.Bytes, true)
+
 	for {
 		bytesRead, errRead := lmr.Read(buffer)
 		if bytesRead > 0 {
 			_, errWrite := w.Write(buffer[:bytesRead])
-
 			if errWrite != nil {
 				return errWrite
 			}
 			pBar.Add(bytesRead)
 		}
 		if errors.Is(errRead, ErrEOF) {
+			pBar.SetCurrent(totalAmountOfBytes)
 			pBar.Finish()
 			return nil
 		}
