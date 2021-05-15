@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"io"
 	"os"
 	"testing"
 )
@@ -66,18 +67,25 @@ func TestCopy(t *testing.T) {
 		},
 	}
 
-	for index, test := range TestCases {
-		err := Copy(test.originFilePath, "testdata/temp.txt", test.limit, test.offset)
-		if err != nil {
-			t.Error(test.testCaseID, index, err)
-		}
-		result, err := compareTwoFiles("testdata/temp.txt", test.comparedFilePath)
-		if err != nil {
-			t.Error(test.testCaseID, index, err)
-		}
-		if result == false {
-			t.Error(test.testCaseID, index, "files are not equal")
-		}
+	for index, tc := range TestCases {
+		test := tc
+		t.Run(test.testCaseID, func(t *testing.T) {
+			err := Copy(test.originFilePath, "testdata/temp.txt", test.limit, test.offset)
+			if err != nil {
+				t.Fatal(test.testCaseID, index, err)
+			}
+			result, err := compareTwoFiles("testdata/temp.txt", test.comparedFilePath)
+			if err != nil {
+				t.Fatal(test.testCaseID, index, err)
+			}
+			if result == false {
+				t.Fatal(test.testCaseID, index, "files are not equal")
+			}
+			err = os.Remove("testdata/temp.txt")
+			if err != nil {
+				t.Fatal(test.testCaseID, index, err)
+			}
+		})
 		os.Remove("testdata/temp.txt")
 	}
 }
@@ -106,12 +114,14 @@ func TestCopyWithNegativeResult(t *testing.T) {
 		},
 	}
 
-	for index, test := range TestNegativeCases {
-		err := Copy(test.originFilePath, "testdata/temp.txt", test.limit, test.offset)
-		if err == nil || (err != nil && !errors.Is(err, test.expectedError)) {
-			t.Error(test.testCaseID, index, "expected error: ", test.expectedError)
-			continue
-		}
+	for index, ts := range TestNegativeCases {
+		test := ts
+		t.Run(test.testCaseID, func(t *testing.T) {
+			err := Copy(test.originFilePath, "testdata/temp.txt", test.limit, test.offset)
+			if err == nil || (err != nil && !errors.Is(err, test.expectedError)) {
+				t.Fatal(test.testCaseID, index, "expected error: ", test.expectedError)
+			}
+		})
 		os.Remove("testdata/temp.txt")
 	}
 }
@@ -122,32 +132,23 @@ func compareTwoFiles(originFilePath, comparedFilePath string) (bool, error) {
 		return false, err
 	}
 	defer originFile.Close()
+
 	comparedFile, err := os.Open(comparedFilePath)
 	if err != nil {
 		return false, err
 	}
 	defer comparedFile.Close()
-	if limit == 0 {
-		sourceFileInfo, err := originFile.Stat()
-		if err != nil {
-			return false, err
-		}
-		limit = sourceFileInfo.Size()
-	}
-	for {
-		bufferSrc := make([]byte, DefaultBlockSize)
-		_, errSrc := originFile.Read(bufferSrc)
-		bufferTest := make([]byte, DefaultBlockSize)
-		_, errTest := comparedFile.Read(bufferTest)
-		if errSrc != nil || errTest != nil {
-			if errors.Is(errSrc, ErrEOF) && errors.Is(errTest, ErrEOF) {
-				return true, nil
-			}
-			return false, errTest
-		}
 
-		if !bytes.Equal(bufferSrc, bufferTest) {
-			return false, nil
-		}
+	bufferSrc, errSrc := io.ReadAll(originFile)
+	bufferTest, errTest := io.ReadAll(comparedFile)
+	if errSrc != nil {
+		return false, errSrc
 	}
+	if errTest != nil {
+		return false, errTest
+	}
+	if !bytes.Equal(bufferSrc, bufferTest) {
+		return false, nil
+	}
+	return true, nil
 }

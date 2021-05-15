@@ -3,14 +3,9 @@ package main
 import (
 	"errors"
 	"io"
-	"math"
 	"os"
 
 	"github.com/cheggaaa/pb/v3"
-)
-
-const (
-	DefaultBlockSize = 4096
 )
 
 var (
@@ -19,7 +14,6 @@ var (
 	ErrRequiredFromPathOrToPath = errors.New("required fromPath and toPath")
 	ErrNegativeLimit            = errors.New("limit cannot be negative")
 	ErrNegativeOffset           = errors.New("offset cannot be negative")
-	ErrEOF                      = io.EOF
 )
 
 func Copy(fromPath, toPath string, limit, offset int64) error {
@@ -79,41 +73,27 @@ func validationOfCopyArguments(fromPath, toPath string, limit, offset int64) err
 }
 
 func copyingProcess(rs io.ReadSeeker, w io.Writer, sourceFileSize, offset, limit int64) error {
+	var totalNumberOfBytesToCopy int64
+	/* вычислим суммарное количество байтов для копирования
+	данное значение нужно для прогресса и для задания лимита для копирования */
+	if limit == 0 || limit > sourceFileSize-offset {
+		totalNumberOfBytesToCopy = sourceFileSize - offset
+	} else {
+		totalNumberOfBytesToCopy = limit
+	}
+
 	if _, err := rs.Seek(offset, io.SeekStart); err != nil {
 		return err
 	}
 
-	var totalAmountOfBytes int64
-	if limit != 0 {
-		totalAmountOfBytes = int64(math.Min(float64(limit), float64(sourceFileSize)))
-	} else {
-		totalAmountOfBytes = sourceFileSize - offset
+	bar := pb.Full.Start64(totalNumberOfBytesToCopy)
+	bar.Set(pb.Bytes, true)
+	reader := io.LimitReader(rs, totalNumberOfBytesToCopy)
+	barReader := bar.NewProxyReader(reader)
+	_, err := io.Copy(w, barReader)
+	if err != nil {
+		return err
 	}
-
-	buffer := make([]byte, DefaultBlockSize)
-	lmr := io.LimitReader(rs, totalAmountOfBytes)
-
-	pBar := pb.Start64(totalAmountOfBytes)
-	pBar.SetWidth(100)
-	pBar.Set(pb.Bytes, true)
-
-	for {
-		bytesRead, errRead := lmr.Read(buffer)
-		if bytesRead > 0 {
-			_, errWrite := w.Write(buffer[:bytesRead])
-			if errWrite != nil {
-				return errWrite
-			}
-			pBar.Add(bytesRead)
-		}
-		if errors.Is(errRead, ErrEOF) {
-			pBar.SetCurrent(totalAmountOfBytes)
-			pBar.Finish()
-			return nil
-		}
-		if errRead != nil {
-			pBar.Finish()
-			return errRead
-		}
-	}
+	bar.Finish()
+	return nil
 }
