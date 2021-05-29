@@ -34,14 +34,14 @@ func NewCache(capacity int) Cache {
 }
 
 func (cache *lruCache) Set(key Key, value interface{}) bool {
+	cache.mutex.Lock()
+	defer cache.mutex.Unlock()
 	newItem := cacheItem{
 		key:   key,
 		value: value,
 	}
 
 	cachedValue, wasInCache := cache.items[key]
-	cache.mutex.Lock()
-	defer cache.mutex.Unlock()
 	if wasInCache {
 		cache.queue.MoveToFront(cachedValue)
 		cachedValue.Value = newItem
