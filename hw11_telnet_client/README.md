@@ -101,7 +101,9 @@ back!
 #### Зачёт от 7 баллов
 
 ### Подсказки
-- `flag.StringVar`
+- Для ручного тестирования рекомендуется использовать nc (как в `test.sh`).
+- `flag.StringVar`, `flag.DurationVar`
 - `net.JoinHostPort`, `net.DialTimeout`
 - `bufio` / `io`
+- `signal.NotifyContext`
 - https://stackoverflow.com/questions/51317968/write-on-a-closed-net-conn-but-returned-nil-error
